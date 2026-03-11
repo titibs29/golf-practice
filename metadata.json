@@ -1,0 +1,5 @@
+{
+  "name": "Golf Pro Practice",
+  "description": "A comprehensive golf practice assistant with distance tracking, exercises, and AI-powered coaching.",
+  "requestFramePermissions": ["geolocation"]
+}
