@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+@layer utilities {
+  .dark {
+    /* Backgrounds */
+    & .bg-\[\#F5F5F5\] { background-color: var(--color-gray-900) !important; }
+    & .bg-white { background-color: var(--color-gray-800) !important; }
+    & .bg-gray-50 { background-color: var(--color-gray-700) !important; }
+    & .bg-gray-100 { background-color: var(--color-gray-600) !important; }
+    & .bg-gray-200 { background-color: var(--color-gray-500) !important; }
+    & .bg-gray-300 { background-color: var(--color-gray-600) !important; }
+    & .bg-white\/50 { background-color: rgba(31, 41, 55, 0.5) !important; }
+    
+    /* Text */
+    & .text-\[\#1A1A1A\] { color: var(--color-gray-100) !important; }
+    & .text-gray-900 { color: var(--color-gray-100) !important; }
+    & .text-gray-800 { color: var(--color-gray-100) !important; }
+    & .text-gray-600 { color: var(--color-gray-200) !important; }
+    & .text-gray-500 { color: var(--color-gray-200) !important; }
+    & .text-gray-400 { color: var(--color-gray-300) !important; }
+    & .text-emerald-600 { color: var(--color-emerald-400) !important; }
+    
+    /* Borders */
+    & .border-black\/5 { border-color: rgba(255, 255, 255, 0.1) !important; }
+    & .border-black\/10 { border-color: rgba(255, 255, 255, 0.2) !important; }
+    & .border-gray-200 { border-color: var(--color-gray-700) !important; }
+    
+    /* Emerald */
+    & .bg-emerald-600 { background-color: var(--color-emerald-700) !important; }
+    & .bg-emerald-700 { background-color: var(--color-emerald-800) !important; }
+    & .bg-emerald-100 { background-color: var(--color-emerald-900) !important; }
+    & .bg-emerald-50 { background-color: var(--color-emerald-900) !important; }
+    & .bg-emerald-200 { background-color: var(--color-emerald-800) !important; }
+    & .text-emerald-800 { color: var(--color-emerald-200) !important; }
+    
+    /* Rose */
+    & .bg-rose-600 { background-color: var(--color-rose-700) !important; }
+    & .bg-rose-700 { background-color: var(--color-rose-800) !important; }
+    & .bg-rose-100 { background-color: var(--color-rose-900) !important; }
+    & .bg-rose-50 { background-color: var(--color-rose-900) !important; }
+    & .bg-rose-200 { background-color: var(--color-rose-800) !important; }
+    & .text-rose-600 { color: var(--color-rose-400) !important; }
+    & .text-rose-800 { color: var(--color-rose-200) !important; }
+    
+    /* Blue */
+    & .bg-blue-600 { background-color: var(--color-blue-700) !important; }
+    & .bg-blue-700 { background-color: var(--color-blue-800) !important; }
+    & .bg-blue-100 { background-color: var(--color-blue-900) !important; }
+    & .bg-blue-50 { background-color: var(--color-blue-900) !important; }
+    & .bg-blue-200 { background-color: var(--color-blue-800) !important; }
+    & .text-blue-600 { color: var(--color-blue-400) !important; }
+    & .text-blue-800 { color: var(--color-blue-200) !important; }
+    
+    /* Amber */
+    & .bg-amber-50 { background-color: var(--color-amber-900) !important; }
+    & .bg-amber-200 { background-color: var(--color-amber-800) !important; }
+    & .text-amber-600 { color: var(--color-amber-400) !important; }
+    & .text-amber-800 { color: var(--color-amber-200) !important; }
+  }
+}

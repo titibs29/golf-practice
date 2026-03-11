@@ -1,6 +1,7 @@
 export interface Club {
   id: number;
   name: string; // e.g. "7 Iron"
+  custom_name?: string;
   brand: string;
   model: string;
   shaft?: string;
@@ -17,6 +18,8 @@ export interface DistanceEntry {
   direction?: string;
   hit_point?: string;
   trajectory?: string;
+  wind?: string;
+  temperature?: number;
   date: string;
 }
 

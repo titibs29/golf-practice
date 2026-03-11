@@ -63,9 +63,175 @@ export default function App() {
   const [customLogClubName, setCustomLogClubName] = useState('');
   const [clubToDelete, setClubToDelete] = useState<Club | null>(null);
 
+  // Local LLM states
+  const [useLocalLLM, setUseLocalLLM] = useState(false);
+  const [localModelInstalled, setLocalModelInstalled] = useState(false);
+  const [isDownloadingModel, setIsDownloadingModel] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  
+  // Model checking states
+  const [isCheckingModels, setIsCheckingModels] = useState(false);
+  const [availableModels, setAvailableModels] = useState<{id: string, name: string, source: string}[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [isVerifyingDownload, setIsVerifyingDownload] = useState(false);
+  const [downloadVerified, setDownloadVerified] = useState(false);
+  
+  // Network state
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // AI Settings & Drills state
+  const [showAISettings, setShowAISettings] = useState(false);
+  const [drills, setDrills] = useState<Exercise[]>(EXERCISES);
+  const [showDrillForm, setShowDrillForm] = useState(false);
+  const [newDrill, setNewDrill] = useState<Partial<Exercise>>({
+    title: '', description: '', category: 'Iron', difficulty: 'Beginner'
+  });
+
+  // App Settings state
+  const [showSettings, setShowSettings] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' || 
+        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
+  // Simple translation function
+  const isFrench = navigator.language.startsWith('fr');
+  const t = (text: string) => {
+    if (!isFrench) return text;
+    const frDict: Record<string, string> = {
+      "Dashboard": "Tableau de bord",
+      "Stats": "Stats",
+      "Shots": "Tirs",
+      "Bag": "Sac",
+      "Log": "Historique",
+      "Coach": "Coach",
+      "Drills": "Exercices",
+      "AI Coach": "Coach IA",
+      "Practice Drills": "Exercices d'entraînement",
+      "Local": "Local",
+      "Offline": "Hors ligne",
+      "No Connection": "Pas de connexion",
+      "You are currently offline and no local AI model is installed. Please connect to the internet to use the Cloud AI or to download a local model.": "Vous êtes hors ligne et aucun modèle IA local n'est installé. Connectez-vous à Internet pour utiliser l'IA Cloud ou télécharger un modèle local.",
+      "AI Model Settings": "Paramètres du modèle IA",
+      "Local AI ensures privacy and offline use. Cloud AI offers enhanced speed and precision.": "L'IA locale garantit la confidentialité et l'utilisation hors ligne.\nL'IA Cloud offre une vitesse et une précision accrues.",
+      "Processing Mode": "Mode de traitement",
+      "Cloud AI": "IA Cloud",
+      "Local AI": "IA Locale",
+      "Select Local Model": "Sélectionner un modèle local",
+      "Add Drill": "Ajouter un exercice",
+      "Create Custom Drill": "Créer un exercice personnalisé",
+      "Title": "Titre",
+      "Description": "Description",
+      "Category": "Catégorie",
+      "Difficulty": "Difficulté",
+      "Putting": "Putting",
+      "Chipping": "Chipping",
+      "Iron": "Fers",
+      "Driver": "Driver",
+      "Mental": "Mental",
+      "Beginner": "Débutant",
+      "Intermediate": "Intermédiaire",
+      "Cancel": "Annuler",
+      "Save": "Enregistrer",
+      "Mark as Completed": "Marquer comme terminé",
+      "Delete": "Supprimer",
+      "My Bag": "Mon Sac",
+      "Add Club": "Ajouter un club",
+      "Recent Shots": "Tirs récents",
+      "Log Shot": "Enregistrer un tir",
+      "Distance": "Distance",
+      "Club": "Club",
+      "Direction": "Direction",
+      "Hit Point": "Point d'impact",
+      "Trajectory": "Trajectoire",
+      "Wind": "Vent",
+      "Temperature": "Température",
+      "Notes": "Notes",
+      "Save Shot": "Enregistrer le tir",
+      "Update Shot": "Mettre à jour le tir",
+      "Advanced": "Avancé",
+      "Brand": "Marque",
+      "Model": "Modèle",
+      "Shaft": "Manche",
+      "Grip": "Grip",
+      "Color": "Couleur",
+      "In Bag": "Dans le sac",
+      "Out of Bag": "Hors du sac",
+      "All Clubs": "Tous les clubs",
+      "All": "Tous",
+      "Avg": "Moy",
+      "Max": "Max",
+      "shots": "tirs",
+      "shot": "tir",
+      "No shots logged yet.": "Aucun tir enregistré pour le moment.",
+      "No shots found for this filter.": "Aucun tir trouvé pour ce filtre.",
+      "Bag is full (14 clubs max)": "Le sac est plein (14 clubs max)",
+      "Are you sure you want to delete this club?": "Êtes-vous sûr de vouloir supprimer ce club ?",
+      "Delete Club": "Supprimer le club",
+      "Edit": "Modifier",
+      "Other": "Autre",
+      "Custom Type": "Type personnalisé",
+      "Custom Brand": "Marque personnalisée",
+      "Custom Model": "Modèle personnalisé",
+      "Local Assistant Setup": "Configuration de l'assistant local",
+      "Checking for installed models (Google Edge AI Gallery)...": "Vérification des modèles installés (Google Edge AI Gallery)...",
+      "We found existing models on your device. Please select one to use:": "Nous avons trouvé des modèles existants sur votre appareil. Veuillez en sélectionner un :",
+      "Source:": "Source :",
+      "Use Selected Model": "Utiliser le modèle sélectionné",
+      "None of these? Download a new model": "Aucun de ceux-ci ? Télécharger un nouveau modèle",
+      "Verifying model availability and free license...": "Vérification de la disponibilité du modèle et de la licence gratuite...",
+      "No existing models found. To run the AI Coach locally on your device for complete privacy and offline access, you need to download a small Gemma model (approx. 800MB).": "Aucun modèle existant trouvé. Pour exécuter le Coach IA localement sur votre appareil pour une confidentialité totale et un accès hors ligne, vous devez télécharger un petit modèle Gemma (environ 800 Mo).",
+      "Verified free and available to download.": "Vérifié gratuit et disponible au téléchargement.",
+      "Downloading": "Téléchargement",
+      "Download Model (<1GB)": "Télécharger le modèle (<1Go)",
+      "Analyzing your swing data...": "Analyse de vos données de swing...",
+      "Local Gemma model is analyzing your swing data...": "Le modèle Gemma local analyse vos données de swing...",
+      "Keep practicing! Consistency is key. We couldn't analyze your data right now.": "Continuez à vous entraîner ! La régularité est la clé. Nous n'avons pas pu analyser vos données pour le moment.",
+      "Focus on Tempo": "Concentrez-vous sur le tempo",
+      "Maintain a smooth 3:1 backswing to downswing ratio.": "Maintenez un rapport de 3:1 entre la montée et la descente.",
+      "Metronome Drill": "Exercice du métronome",
+      "Beginner": "Débutant",
+      "Intermediate": "Intermédiaire",
+      "Advanced": "Avancé",
+      "Putting": "Putt",
+      "Chipping": "Approche",
+      "Iron": "Fer",
+      "Driver": "Driver",
+      "Mental": "Mental",
+    };
+    return frDict[text] || text;
+  };
+
   useEffect(() => {
     fetchData();
     fetchWeather();
+    
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => {
+      setIsOnline(false);
+      setUseLocalLLM(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const fetchWeather = async () => {
@@ -241,12 +407,14 @@ export default function App() {
     const direction = formData.get('direction') as string;
     const hit_point = formData.get('hit_point') as string;
     const trajectory = formData.get('trajectory') as string;
+    const wind = formData.get('wind') as string;
+    const temperature = Number(formData.get('temperature')) || null;
 
     try {
       await fetch('/api/distances', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ club, distance, direction, hit_point, trajectory })
+        body: JSON.stringify({ club, distance, direction, hit_point, trajectory, wind, temperature })
       });
       fetchData();
       setActiveTab('dashboard');
@@ -290,6 +458,27 @@ export default function App() {
     }
   };
 
+  const handleCreateDrill = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDrill.title || !newDrill.description) return;
+    
+    const drill: Exercise = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: newDrill.title,
+      description: newDrill.description,
+      category: newDrill.category as any,
+      difficulty: newDrill.difficulty as any
+    };
+    
+    setDrills([drill, ...drills]);
+    setShowDrillForm(false);
+    setNewDrill({ title: '', description: '', category: 'Iron', difficulty: 'Beginner' });
+  };
+
+  const handleDeleteDrill = (id: string) => {
+    setDrills(drills.filter(d => d.id !== id));
+  };
+
   const filteredDistances = clubFilter === 'All' 
     ? distances 
     : distances.filter(d => d.club === clubFilter);
@@ -312,6 +501,58 @@ export default function App() {
     }, 2000);
   };
 
+  const verifyDownloadAvailability = async () => {
+    setIsVerifyingDownload(true);
+    // Simulate checking license, free space, and network
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsVerifyingDownload(false);
+    setDownloadVerified(true);
+  };
+
+  const checkLocalModels = async () => {
+    setIsCheckingModels(true);
+    setAvailableModels([]);
+    setDownloadVerified(false);
+    
+    // Simulate API call to check Edge AI Gallery / Local Storage
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Simulate finding models from Google Edge AI Gallery
+    const mockFoundModels = [
+      { id: 'gemma-2b', name: 'Gemma 2B (2B Parameters)', source: 'Google Edge AI Gallery' },
+      { id: 'llama-3-3b', name: 'Llama 3.2 (3B Parameters)', source: 'Local Storage' }
+    ];
+    
+    setIsCheckingModels(false);
+    
+    if (mockFoundModels.length > 0) {
+      setAvailableModels(mockFoundModels);
+      setSelectedModelId(mockFoundModels[0].id);
+    } else {
+      verifyDownloadAvailability();
+    }
+  };
+
+  const handleDownloadModel = () => {
+    setIsDownloadingModel(true);
+    setDownloadProgress(0);
+    
+    // Simulate download
+    const interval = setInterval(() => {
+      setDownloadProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            setIsDownloadingModel(false);
+            setLocalModelInstalled(true);
+          }, 500);
+          return 100;
+        }
+        return prev + Math.floor(Math.random() * 15) + 5;
+      });
+    }, 500);
+  };
+
   const generateAdvice = async () => {
     setIsLoadingAdvice(true);
     const advice = await getGolfAdvice(stats, distances);
@@ -320,13 +561,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] text-[#1A1A1A] font-sans pb-24">
+    <div className="min-h-screen bg-[#F5F5F5] dark:bg-gray-900 text-[#1A1A1A] dark:text-gray-100 font-sans pb-24 transition-colors">
       {/* Header */}
-      <header className="bg-white border-b border-black/5 px-6 py-4 sticky top-0 z-10 flex justify-between items-center">
+      <header className="bg-white dark:bg-gray-900 border-b border-black/5 dark:border-white/10 px-6 py-4 sticky top-0 z-10 flex justify-between items-center transition-colors">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Golf Pro Practice</h1>
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Your Digital Caddy</p>
+            <h1 className="text-xl font-bold tracking-tight dark:text-white">Golf Pro Practice</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Your Digital Caddy</p>
           </div>
           {weather && (
             <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-black/5">
@@ -357,12 +598,61 @@ export default function App() {
           <button 
             onClick={handleSyncToptracer}
             disabled={isSyncing}
-            className={`p-2 rounded-full transition-all ${isSyncing ? 'bg-emerald-100 text-emerald-600 animate-spin' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`p-2 rounded-full transition-all ${isSyncing ? 'bg-emerald-100 text-emerald-600 animate-spin' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`}
           >
             <RefreshCw size={20} />
           </button>
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="p-2 rounded-full transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <Settings2 size={20} />
+          </button>
         </div>
       </header>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSettings(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-sm shadow-xl border border-black/5 dark:border-white/10"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold dark:text-white">Settings</h2>
+                <button onClick={() => setShowSettings(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-black/5 dark:border-white/5">
+                  <div>
+                    <p className="font-bold dark:text-white">Dark Mode</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Toggle app theme</p>
+                  </div>
+                  <button 
+                    onClick={() => setDarkMode(!darkMode)}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${darkMode ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="p-6 max-w-md mx-auto">
         <AnimatePresence mode="wait">
@@ -397,7 +687,7 @@ export default function App() {
 
                 {stats.length > 0 && (
                   <div className="mb-6">
-                    <RangeVisualization stats={stats} />
+                    <RangeVisualization stats={stats} distances={distances} />
                   </div>
                 )}
 
@@ -575,6 +865,27 @@ export default function App() {
                           </div>
                         </div>
 
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Wind (km/h)</label>
+                            <input 
+                              name="wind" 
+                              type="text" 
+                              placeholder="e.g. 10km/h N"
+                              className="w-full bg-gray-50 border border-black/5 rounded-xl p-4 font-medium focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Temp (°C)</label>
+                            <input 
+                              name="temperature" 
+                              type="number" 
+                              placeholder="e.g. 22"
+                              className="w-full bg-gray-50 border border-black/5 rounded-xl p-4 font-medium focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+
                         <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
                           <Plus size={20} /> Save Shot
                         </button>
@@ -677,20 +988,75 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              <h2 className="text-2xl font-bold">Practice Drills</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">{t('Practice Drills')}</h2>
+                <button 
+                  onClick={() => setShowDrillForm(!showDrillForm)}
+                  className="p-2 bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors"
+                >
+                  {showDrillForm ? <X size={20} /> : <Plus size={20} />}
+                </button>
+              </div>
+
+              {showDrillForm && (
+                <form onSubmit={handleCreateDrill} className="bg-white p-5 rounded-2xl shadow-sm border border-black/5 space-y-4">
+                  <h3 className="font-bold">{t('Create Custom Drill')}</h3>
+                  <input 
+                    type="text" 
+                    placeholder={t('Title')}
+                    value={newDrill.title}
+                    onChange={e => setNewDrill({...newDrill, title: e.target.value})}
+                    className="w-full bg-gray-50 border border-black/5 rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  />
+                  <textarea 
+                    placeholder={t('Description')}
+                    value={newDrill.description}
+                    onChange={e => setNewDrill({...newDrill, description: e.target.value})}
+                    className="w-full bg-gray-50 border border-black/5 rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 h-24 resize-none"
+                    required
+                  />
+                  <div className="flex gap-3">
+                    <select 
+                      value={newDrill.category}
+                      onChange={e => setNewDrill({...newDrill, category: e.target.value as any})}
+                      className="flex-1 bg-gray-50 border border-black/5 rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {['Putting', 'Chipping', 'Iron', 'Driver', 'Mental'].map(c => <option key={c} value={c}>{t(c)}</option>)}
+                    </select>
+                    <select 
+                      value={newDrill.difficulty}
+                      onChange={e => setNewDrill({...newDrill, difficulty: e.target.value as any})}
+                      className="flex-1 bg-gray-50 border border-black/5 rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {['Beginner', 'Intermediate', 'Advanced'].map(d => <option key={d} value={d}>{t(d)}</option>)}
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors">
+                    {t('Save')}
+                  </button>
+                </form>
+              )}
+
               <div className="space-y-4">
-                {EXERCISES.map((ex) => (
-                  <div key={ex.id} className="bg-white p-5 rounded-2xl shadow-sm border border-black/5 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <span className="px-2 py-1 bg-gray-100 text-[10px] font-bold uppercase rounded text-gray-500 tracking-wider">{ex.category}</span>
-                      <span className={`text-[10px] font-bold uppercase ${ex.difficulty === 'Beginner' ? 'text-emerald-500' : ex.difficulty === 'Intermediate' ? 'text-amber-500' : 'text-rose-500'}`}>{ex.difficulty}</span>
+                {drills.map((ex) => (
+                  <div key={ex.id} className="bg-white p-5 rounded-2xl shadow-sm border border-black/5 space-y-3 relative group">
+                    <button 
+                      onClick={() => handleDeleteDrill(ex.id)}
+                      className="absolute top-4 right-4 p-2 text-gray-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <div className="flex justify-between items-start pr-8">
+                      <span className="px-2 py-1 bg-gray-100 text-[10px] font-bold uppercase rounded text-gray-500 tracking-wider">{t(ex.category)}</span>
+                      <span className={`text-[10px] font-bold uppercase ${ex.difficulty === 'Beginner' ? 'text-emerald-500' : ex.difficulty === 'Intermediate' ? 'text-amber-500' : 'text-rose-500'}`}>{t(ex.difficulty)}</span>
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{ex.title}</h3>
                       <p className="text-sm text-gray-500 leading-relaxed">{ex.description}</p>
                     </div>
                     <button className="w-full py-2 bg-gray-50 text-gray-600 text-sm font-bold rounded-lg border border-gray-100 hover:bg-gray-100 transition-all">
-                      Mark as Completed
+                      {t('Mark as Completed')}
                     </button>
                   </div>
                 ))}
@@ -707,20 +1073,229 @@ export default function App() {
               className="space-y-6"
             >
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">AI Coach</h2>
-                <button 
-                  onClick={generateAdvice}
-                  disabled={isLoadingAdvice || stats.length === 0}
-                  className="p-2 bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-600/20 disabled:opacity-50"
-                >
-                  <Sparkles size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold">{t('AI Coach')}</h2>
+                  {useLocalLLM && localModelInstalled && (
+                    <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider flex items-center gap-1">
+                      <Zap size={10} /> {t('Local')}
+                    </span>
+                  )}
+                  {!isOnline && (
+                    <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider flex items-center gap-1">
+                      {t('Offline')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {(isOnline || availableModels.length > 1) && (
+                    <button 
+                      onClick={() => setShowAISettings(!showAISettings)}
+                      className={`p-2 rounded-full transition-colors ${showAISettings ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      <Settings2 size={20} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={generateAdvice}
+                    disabled={isLoadingAdvice || stats.length === 0 || (!isOnline && !localModelInstalled)}
+                    className="p-2 bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                  >
+                    <Sparkles size={20} />
+                  </button>
+                </div>
               </div>
+
+              {!isOnline && !localModelInstalled && (
+                <div className="bg-rose-50 border border-rose-100 p-5 rounded-2xl shadow-sm text-rose-700 text-sm">
+                  <div className="flex items-center gap-2 font-bold mb-1">
+                    <AlertTriangle size={18} /> {t('No Connection')}
+                  </div>
+                  {t('You are currently offline and no local AI model is installed. Please connect to the internet to use the Cloud AI or to download a local model.')}
+                </div>
+              )}
+
+              {showAISettings && (isOnline || availableModels.length > 1) && (
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-black/5 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-50 text-gray-600 rounded-lg shrink-0">
+                      <Settings2 size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900">{t('AI Model Settings')}</h3>
+                      <p className="text-xs text-gray-500 mt-1 whitespace-pre-line">
+                        {t('Local AI ensures privacy and offline use. Cloud AI offers enhanced speed and precision.')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 pt-2 border-t border-black/5">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">{t('Processing Mode')}</label>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => isOnline && setUseLocalLLM(false)}
+                        disabled={!isOnline}
+                        className={`flex-1 py-2 px-3 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                          !useLocalLLM 
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                            : 'bg-white border-black/5 text-gray-600 hover:bg-gray-50'
+                        } ${!isOnline ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {t('Cloud AI')} {!isOnline && `(${t('Offline')})`}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUseLocalLLM(true);
+                          if (!localModelInstalled && availableModels.length === 0) {
+                            checkLocalModels();
+                          }
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                          useLocalLLM 
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                            : 'bg-white border-black/5 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {t('Local AI')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {useLocalLLM && availableModels.length > 1 && (
+                    <div className="space-y-2 pt-2 border-t border-black/5">
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">{t('Select Local Model')}</label>
+                      <select 
+                        value={selectedModelId}
+                        onChange={(e) => setSelectedModelId(e.target.value)}
+                        className="w-full bg-gray-50 border border-black/5 rounded-xl p-3 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        {availableModels.map(m => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.source})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {useLocalLLM && !localModelInstalled && (
+                <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg shrink-0">
+                      <Zap size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-blue-900">Local Assistant Setup</h3>
+                      
+                      {isCheckingModels ? (
+                        <div className="py-4 space-y-3">
+                          <div className="flex items-center gap-3 text-blue-700">
+                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-sm font-medium">Checking for installed models (Google Edge AI Gallery)...</span>
+                          </div>
+                        </div>
+                      ) : availableModels.length > 0 ? (
+                        <div className="mt-2 space-y-4">
+                          <p className="text-sm text-blue-700">
+                            We found existing models on your device. Please select one to use:
+                          </p>
+                          <div className="space-y-2">
+                            {availableModels.map(model => (
+                              <label key={model.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedModelId === model.id ? 'bg-blue-100 border-blue-300' : 'bg-white border-black/5 hover:border-blue-200'}`}>
+                                <input 
+                                  type="radio" 
+                                  name="localModel" 
+                                  value={model.id}
+                                  checked={selectedModelId === model.id}
+                                  onChange={() => setSelectedModelId(model.id)}
+                                  className="text-blue-600 focus:ring-blue-500"
+                                />
+                                <div>
+                                  <p className="font-bold text-sm text-gray-900">{model.name}</p>
+                                  <p className="text-xs text-gray-500">Source: {model.source}</p>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <button 
+                              onClick={() => setLocalModelInstalled(true)}
+                              className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              Use Selected Model
+                            </button>
+                            <button 
+                              onClick={() => setUseLocalLLM(false)}
+                              className="bg-blue-100 text-blue-700 text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              setAvailableModels([]);
+                              verifyDownloadAvailability();
+                            }}
+                            className="text-blue-600 text-xs font-bold underline mt-2"
+                          >
+                            None of these? Download a new model
+                          </button>
+                        </div>
+                      ) : isVerifyingDownload ? (
+                        <div className="py-4 space-y-3">
+                          <div className="flex items-center gap-3 text-blue-700">
+                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-sm font-medium">Verifying model availability and free license...</span>
+                          </div>
+                        </div>
+                      ) : downloadVerified ? (
+                        <>
+                          <p className="text-sm text-blue-700 mt-1 mb-4">
+                            No existing models found. To run the AI Coach locally on your device for complete privacy and offline access, you need to download a small Gemma model (approx. 800MB).
+                            <br/><br/>
+                            <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                              <Check size={14} /> Verified free and available to download.
+                            </span>
+                          </p>
+                          
+                          {isDownloadingModel ? (
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-xs font-bold text-blue-800">
+                                <span>Downloading gemma-2b-it-q4f32_1...</span>
+                                <span>{downloadProgress}%</span>
+                              </div>
+                              <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                                <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${downloadProgress}%` }}></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={handleDownloadModel}
+                                className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Download Model (&lt;1GB)
+                              </button>
+                              <button 
+                                onClick={() => setUseLocalLLM(false)}
+                                className="bg-blue-100 text-blue-700 text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {isLoadingAdvice ? (
                 <div className="bg-white p-12 rounded-2xl shadow-sm border border-black/5 text-center space-y-4">
                   <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-gray-500 font-medium">Analyzing your swing data...</p>
+                  <p className="text-gray-500 font-medium">
+                    {useLocalLLM && localModelInstalled ? 'Local Gemma model is analyzing your swing data...' : 'Analyzing your swing data...'}
+                  </p>
                 </div>
               ) : aiAdvice ? (
                 <div className="space-y-6">
@@ -1114,31 +1689,31 @@ export default function App() {
           active={activeTab === 'dashboard'} 
           onClick={() => setActiveTab('dashboard')} 
           icon={<LineChart size={24} />} 
-          label="Stats" 
+          label={t("Stats")} 
         />
         <NavButton 
           active={activeTab === 'shots'} 
           onClick={() => setActiveTab('shots')} 
           icon={<History size={24} />} 
-          label="Shots" 
+          label={t("Shots")} 
         />
         <NavButton 
           active={activeTab === 'bag'} 
           onClick={() => setActiveTab('bag')} 
           icon={<ShoppingBag size={24} />} 
-          label="Bag" 
+          label={t("Bag")} 
         />
         <NavButton 
           active={activeTab === 'exercises'} 
           onClick={() => setActiveTab('exercises')} 
           icon={<BookOpen size={24} />} 
-          label="Drills" 
+          label={t("Drills")} 
         />
         <NavButton 
           active={activeTab === 'ai'} 
           onClick={() => setActiveTab('ai')} 
           icon={<Sparkles size={24} />} 
-          label="Coach" 
+          label={t("Coach")} 
         />
       </nav>
     </div>

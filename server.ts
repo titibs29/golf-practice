@@ -18,6 +18,8 @@ db.exec(`
     direction TEXT,
     hit_point TEXT,
     trajectory TEXT,
+    wind TEXT,
+    temperature REAL,
     date DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE IF NOT EXISTS sessions (
@@ -53,6 +55,12 @@ if (!columnsDistances.includes('hit_point')) {
 if (!columnsDistances.includes('trajectory')) {
   db.exec("ALTER TABLE distances ADD COLUMN trajectory TEXT");
 }
+if (!columnsDistances.includes('wind')) {
+  db.exec("ALTER TABLE distances ADD COLUMN wind TEXT");
+}
+if (!columnsDistances.includes('temperature')) {
+  db.exec("ALTER TABLE distances ADD COLUMN temperature REAL");
+}
 
 const tableInfoClubs = db.prepare("PRAGMA table_info(clubs)").all() as any[];
 const columnsClubs = tableInfoClubs.map(c => c.name);
@@ -65,6 +73,9 @@ if (!columnsClubs.includes('in_bag')) {
 }
 if (!columnsClubs.includes('sort_order')) {
   db.exec("ALTER TABLE clubs ADD COLUMN sort_order INTEGER DEFAULT 0");
+}
+if (!columnsClubs.includes('custom_name')) {
+  db.exec("ALTER TABLE clubs ADD COLUMN custom_name TEXT");
 }
 
 async function startServer() {
@@ -80,21 +91,21 @@ async function startServer() {
   });
 
   app.post("/api/distances", (req, res) => {
-    const { club, distance, direction, hit_point, trajectory } = req.body;
+    const { club, distance, direction, hit_point, trajectory, wind, temperature } = req.body;
     const info = db.prepare(`
-      INSERT INTO distances (club, distance, direction, hit_point, trajectory) 
-      VALUES (?, ?, ?, ?, ?)
-    `).run(club, distance, direction, hit_point, trajectory);
+      INSERT INTO distances (club, distance, direction, hit_point, trajectory, wind, temperature) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(club, distance, direction, hit_point, trajectory, wind, temperature);
     res.json({ id: info.lastInsertRowid });
   });
 
   app.put("/api/distances/:id", (req, res) => {
-    const { club, distance, direction, hit_point, trajectory } = req.body;
+    const { club, distance, direction, hit_point, trajectory, wind, temperature } = req.body;
     db.prepare(`
       UPDATE distances 
-      SET club = ?, distance = ?, direction = ?, hit_point = ?, trajectory = ?
+      SET club = ?, distance = ?, direction = ?, hit_point = ?, trajectory = ?, wind = ?, temperature = ?
       WHERE id = ?
-    `).run(club, distance, direction, hit_point, trajectory, req.params.id);
+    `).run(club, distance, direction, hit_point, trajectory, wind, temperature, req.params.id);
     res.sendStatus(200);
   });
 
@@ -125,24 +136,24 @@ async function startServer() {
   });
 
   app.post("/api/clubs", (req, res) => {
-    const { name, brand, model, shaft, grip, notes, color, in_bag } = req.body;
+    const { name, custom_name, brand, model, shaft, grip, notes, color, in_bag } = req.body;
     const maxOrder = db.prepare("SELECT MAX(sort_order) as maxOrder FROM clubs").get() as { maxOrder: number | null };
     const nextOrder = (maxOrder.maxOrder || 0) + 1;
     
     const info = db.prepare(`
-      INSERT INTO clubs (name, brand, model, shaft, grip, notes, color, in_bag, sort_order) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(name, brand, model, shaft, grip, notes, color || '#10B981', in_bag !== undefined ? in_bag : 1, nextOrder);
+      INSERT INTO clubs (name, custom_name, brand, model, shaft, grip, notes, color, in_bag, sort_order) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(name, custom_name, brand, model, shaft, grip, notes, color || '#10B981', in_bag !== undefined ? in_bag : 1, nextOrder);
     res.json({ id: info.lastInsertRowid });
   });
 
   app.put("/api/clubs/:id", (req, res) => {
-    const { name, brand, model, shaft, grip, notes, color, in_bag } = req.body;
+    const { name, custom_name, brand, model, shaft, grip, notes, color, in_bag } = req.body;
     db.prepare(`
       UPDATE clubs 
-      SET name = ?, brand = ?, model = ?, shaft = ?, grip = ?, notes = ?, color = ?, in_bag = ?
+      SET name = ?, custom_name = ?, brand = ?, model = ?, shaft = ?, grip = ?, notes = ?, color = ?, in_bag = ?
       WHERE id = ?
-    `).run(name, brand, model, shaft, grip, notes, color, in_bag, req.params.id);
+    `).run(name, custom_name, brand, model, shaft, grip, notes, color, in_bag, req.params.id);
     res.sendStatus(200);
   });
 
