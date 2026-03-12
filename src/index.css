@@ -31,6 +31,9 @@
     & .bg-emerald-100 { background-color: var(--color-emerald-900) !important; }
     & .bg-emerald-50 { background-color: var(--color-emerald-900) !important; }
     & .bg-emerald-200 { background-color: var(--color-emerald-800) !important; }
+    & .text-emerald-500 { color: var(--color-emerald-400) !important; }
+    & .text-emerald-600 { color: var(--color-emerald-400) !important; }
+    & .text-emerald-700 { color: var(--color-emerald-300) !important; }
     & .text-emerald-800 { color: var(--color-emerald-200) !important; }
     
     /* Rose */
@@ -49,12 +52,14 @@
     & .bg-blue-50 { background-color: var(--color-blue-900) !important; }
     & .bg-blue-200 { background-color: var(--color-blue-800) !important; }
     & .text-blue-600 { color: var(--color-blue-400) !important; }
-    & .text-blue-800 { color: var(--color-blue-200) !important; }
+    & .text-blue-700 { color: var(--color-blue-200) !important; }
+    & .text-blue-800 { color: var(--color-blue-100) !important; }
     
     /* Amber */
     & .bg-amber-50 { background-color: var(--color-amber-900) !important; }
     & .bg-amber-200 { background-color: var(--color-amber-800) !important; }
     & .text-amber-600 { color: var(--color-amber-400) !important; }
+    & .text-amber-700 { color: var(--color-amber-300) !important; }
     & .text-amber-800 { color: var(--color-amber-200) !important; }
   }
 }

@@ -4,9 +4,10 @@ import { ClubStat, DistanceEntry } from '../types';
 interface RangeVisualizationProps {
   stats: ClubStat[];
   distances: DistanceEntry[];
+  t: (text: string) => string;
 }
 
-export const RangeVisualization: React.FC<RangeVisualizationProps> = ({ stats, distances }) => {
+export const RangeVisualization: React.FC<RangeVisualizationProps> = ({ stats, distances, t }) => {
   const [hoveredClub, setHoveredClub] = React.useState<string | null>(null);
   const [selectedClub, setSelectedClub] = React.useState<string | null>(null);
 
@@ -59,7 +60,7 @@ export const RangeVisualization: React.FC<RangeVisualizationProps> = ({ stats, d
       <div className="absolute inset-0 opacity-20 pointer-events-none" 
            style={{ background: 'radial-gradient(circle at 50% 100%, #ffffff 0%, transparent 70%)' }} />
       
-      <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4 relative z-10">Range Visualization</h3>
+      <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4 relative z-10">{t('Range Visualization')}</h3>
       
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto drop-shadow-lg">
         {/* Distance Markers (Horizontal Lines) */}
@@ -231,11 +232,11 @@ export const RangeVisualization: React.FC<RangeVisualizationProps> = ({ stats, d
       
       <div className="mt-4 flex justify-between items-end">
         <div className="space-y-1">
-          <p className="text-white/40 text-[8px] font-bold uppercase tracking-tighter">Bag Visualization</p>
-          <p className="text-white font-bold text-sm">Carry Distance Map</p>
+          <p className="text-white/40 text-[8px] font-bold uppercase tracking-tighter">{t('Bag Visualization')}</p>
+          <p className="text-white font-bold text-sm">{t('Carry Distance Map')}</p>
         </div>
         <div className="text-right">
-          <p className="text-emerald-400 font-mono text-xs font-bold">{bagStats.length} Clubs in Bag</p>
+          <p className="text-emerald-400 font-mono text-xs font-bold">{bagStats.length} {t('Clubs in Bag')}</p>
         </div>
       </div>
     </div>
